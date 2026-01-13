@@ -4,6 +4,9 @@ on:
   repository_dispatch:
     types: [update-formula]
 
+permissions:
+  contents: write
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -12,7 +15,10 @@ jobs:
 
       - name: Get version
         id: version
-        run: echo "version=${{ github.event.client_payload.version }}" | sed 's/v//' >> $GITHUB_OUTPUT
+        run: |
+          VERSION="${{ github.event.client_payload.version }}"
+          VERSION="${VERSION#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Download and hash assets
         run: |
@@ -30,27 +36,27 @@ jobs:
         run: |
           VERSION=${{ steps.version.outputs.version }}
           
-          cat > Formula/outray.rb << 'EOF'
+          cat > Formula/outray.rb << EOF
           class Outray < Formula
             desc "Expose your local server to the internet"
             homepage "https://github.com/outray-tunnel/outray"
-            version "VERSION_PLACEHOLDER"
+            version "${VERSION}"
             license "MIT"
 
             on_macos do
               on_arm do
                 url "https://github.com/outray-tunnel/outray/releases/download/v#{version}/outray-macos-arm64.tar.gz"
-                sha256 "SHA_MACOS_ARM64_PLACEHOLDER"
+                sha256 "${SHA_MACOS_ARM64}"
               end
               on_intel do
                 url "https://github.com/outray-tunnel/outray/releases/download/v#{version}/outray-macos-x64.tar.gz"
-                sha256 "SHA_MACOS_X64_PLACEHOLDER"
+                sha256 "${SHA_MACOS_X64}"
               end
             end
 
             on_linux do
               url "https://github.com/outray-tunnel/outray/releases/download/v#{version}/outray-linux-x64.tar.gz"
-              sha256 "SHA_LINUX_X64_PLACEHOLDER"
+              sha256 "${SHA_LINUX_X64}"
             end
 
             def install
@@ -62,11 +68,6 @@ jobs:
             end
           end
           EOF
-          
-          sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" Formula/outray.rb
-          sed -i "s/SHA_MACOS_ARM64_PLACEHOLDER/${SHA_MACOS_ARM64}/g" Formula/outray.rb
-          sed -i "s/SHA_MACOS_X64_PLACEHOLDER/${SHA_MACOS_X64}/g" Formula/outray.rb
-          sed -i "s/SHA_LINUX_X64_PLACEHOLDER/${SHA_LINUX_X64}/g" Formula/outray.rb
 
       - name: Commit and push
         run: |
