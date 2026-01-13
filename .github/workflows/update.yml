@@ -1,0 +1,77 @@
+name: Update Formula
+
+on:
+  repository_dispatch:
+    types: [update-formula]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: echo "version=${{ github.event.client_payload.version }}" | sed 's/v//' >> $GITHUB_OUTPUT
+
+      - name: Download and hash assets
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          
+          curl -sL "https://github.com/outray-tunnel/outray/releases/download/v${VERSION}/outray-macos-arm64.tar.gz" -o macos-arm64.tar.gz
+          curl -sL "https://github.com/outray-tunnel/outray/releases/download/v${VERSION}/outray-macos-x64.tar.gz" -o macos-x64.tar.gz
+          curl -sL "https://github.com/outray-tunnel/outray/releases/download/v${VERSION}/outray-linux-x64.tar.gz" -o linux-x64.tar.gz
+          
+          echo "SHA_MACOS_ARM64=$(sha256sum macos-arm64.tar.gz | cut -d' ' -f1)" >> $GITHUB_ENV
+          echo "SHA_MACOS_X64=$(sha256sum macos-x64.tar.gz | cut -d' ' -f1)" >> $GITHUB_ENV
+          echo "SHA_LINUX_X64=$(sha256sum linux-x64.tar.gz | cut -d' ' -f1)" >> $GITHUB_ENV
+
+      - name: Update formula
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          
+          cat > Formula/outray.rb << 'EOF'
+          class Outray < Formula
+            desc "Expose your local server to the internet"
+            homepage "https://github.com/outray-tunnel/outray"
+            version "VERSION_PLACEHOLDER"
+            license "MIT"
+
+            on_macos do
+              on_arm do
+                url "https://github.com/outray-tunnel/outray/releases/download/v#{version}/outray-macos-arm64.tar.gz"
+                sha256 "SHA_MACOS_ARM64_PLACEHOLDER"
+              end
+              on_intel do
+                url "https://github.com/outray-tunnel/outray/releases/download/v#{version}/outray-macos-x64.tar.gz"
+                sha256 "SHA_MACOS_X64_PLACEHOLDER"
+              end
+            end
+
+            on_linux do
+              url "https://github.com/outray-tunnel/outray/releases/download/v#{version}/outray-linux-x64.tar.gz"
+              sha256 "SHA_LINUX_X64_PLACEHOLDER"
+            end
+
+            def install
+              bin.install "outray"
+            end
+
+            test do
+              system "#{bin}/outray", "--version"
+            end
+          end
+          EOF
+          
+          sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" Formula/outray.rb
+          sed -i "s/SHA_MACOS_ARM64_PLACEHOLDER/${SHA_MACOS_ARM64}/g" Formula/outray.rb
+          sed -i "s/SHA_MACOS_X64_PLACEHOLDER/${SHA_MACOS_X64}/g" Formula/outray.rb
+          sed -i "s/SHA_LINUX_X64_PLACEHOLDER/${SHA_LINUX_X64}/g" Formula/outray.rb
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/outray.rb
+          git commit -m "Update outray to ${{ steps.version.outputs.version }}"
+          git push
