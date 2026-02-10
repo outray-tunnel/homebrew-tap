@@ -1,23 +1,23 @@
 class Outray < Formula
   desc "Expose your local server to the internet"
   homepage "https://github.com/outray-tunnel/outray"
-  version "0.1.6"
+  version "0.1.7"
   license "MIT"
 
   on_macos do
     on_arm do
       url "https://github.com/outray-tunnel/outray/releases/download/v#{version}/outray-macos-arm64.tar.gz"
-      sha256 "37aba43892c5fce2877ce0673970b7523122c0f2c351d172abf058db9598d676"
+      sha256 "03730217d5ea99a2db83063ccb4913e0f8d78c7e5764bef6679630f767edcc6b"
     end
     on_intel do
       url "https://github.com/outray-tunnel/outray/releases/download/v#{version}/outray-macos-x64.tar.gz"
-      sha256 "cd3852ce595584bc7ef0fb54c7da0c4195d36bf4cbc5fb525a9397c2c31fa5d8"
+      sha256 "6b735cc67200bcdd8681107f5502175fef03a670871201cfc6da2ae3a935a519"
     end
   end
 
   on_linux do
     url "https://github.com/outray-tunnel/outray/releases/download/v#{version}/outray-linux-x64.tar.gz"
-    sha256 "927f4486e55979ceba5add344a44da2dc4bf2ca5e355b0a72ebe2aeeb161a5e2"
+    sha256 "8eacca6319d39910ab6bce8917e4e74861aee7c0ace928c918fc0cf7bf14c289"
   end
 
   def install
